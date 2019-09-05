@@ -110,6 +110,8 @@ namespace QifApi
             set;
         }
 
+        public List<TagListTransaction> TagListTransactions { get; set; }
+
         /// <summary>
         /// Gets or sets the configuration to use while processing the QIF file.
         /// </summary>
@@ -135,6 +137,7 @@ namespace QifApi
             CategoryListTransactions = new List<CategoryListTransaction>();
             ClassListTransactions = new List<ClassListTransaction>();
             MemorizedTransactionListTransactions = new List<MemorizedTransactionListTransaction>();
+            TagListTransactions = new List<TagListTransaction>();
             Configuration = config ?? new Configuration();
         }
 
@@ -172,6 +175,7 @@ namespace QifApi
                 InvestmentTransactions.AddRange(import.InvestmentTransactions);
                 LiabilityTransactions.AddRange(import.LiabilityTransactions);
                 MemorizedTransactionListTransactions.AddRange(import.MemorizedTransactionListTransactions);
+                TagListTransactions.AddRange(import.TagListTransactions);
             }
             else
             {
@@ -185,6 +189,7 @@ namespace QifApi
                 InvestmentTransactions = import.InvestmentTransactions;
                 LiabilityTransactions = import.LiabilityTransactions;
                 MemorizedTransactionListTransactions = import.MemorizedTransactionListTransactions;
+                TagListTransactions = import.TagListTransactions;
             }
         }
 
@@ -224,6 +229,7 @@ namespace QifApi
                 writer.AutoFlush = true;
 
                 AccountListLogic.Export(writer, qif.AccountListTransactions, qif.Configuration);
+                TagListLogic.Export(writer, qif.TagListTransactions, qif.Configuration);
                 AssetLogic.Export(writer, qif.AssetTransactions, qif.Configuration);
                 BankLogic.Export(writer, qif.BankTransactions, qif.Configuration);
                 CashLogic.Export(writer, qif.CashTransactions, qif.Configuration);
@@ -372,6 +378,18 @@ namespace QifApi
 
                             // Import all transaction types
                             result.ClassListTransactions.AddRange(ClassListLogic.Import(classItems, result.Configuration));
+
+                            // All done
+                            break;
+                        case Headers.TagList:
+                            // Increment the array counter
+                            i++;
+
+                            // Extract the transaction items
+                            string tagListItems = transactionTypes[i];
+
+                            // Import all transaction types
+                            result.TagListTransactions.AddRange(TagListLogic.Import(tagListItems, result.Configuration));
 
                             // All done
                             break;

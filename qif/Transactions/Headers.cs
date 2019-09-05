@@ -46,5 +46,7 @@ namespace QifApi.Transactions
         /// Memorized transaction list
         /// </summary>
         public const string MemorizedTransactionList = "!Type:Memorized";
+
+        public const string TagList = "!Type:Tag";
     }
 }

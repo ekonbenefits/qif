@@ -9,7 +9,7 @@
     <PackageId>QifApi</PackageId>
     <Description>Quicken Interchange Format API (.NET Managed Wrapper)</Description>
     <Copyright>Copyright © 2017</Copyright>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>Shane Walters</Authors>
     <PackageProjectUrl>https://github.com/shanewalters/qif</PackageProjectUrl>
     <PackageTags>dotnetcore netcore nuget dotnetstandard netstandard qif qifapi quicken</PackageTags>
