@@ -7,6 +7,10 @@ using System.Runtime.InteropServices;
 using QifApi.Config;
 using System.ComponentModel;
 using System.Text;
+using System.Linq;
+
+[assembly: ComVisibleAttribute(true)]
+[assembly: GuidAttribute("ef9b7bba-d661-4d77-9d53-80c10a71ec84")]
 
 namespace QifApi
 {
@@ -110,7 +114,6 @@ namespace QifApi
         /// Gets or sets the configuration to use while processing the QIF file.
         /// </summary>
         /// <value>The configuration to use while processing the QIF file.</value>
-        [TypeConverter(typeof(ExpandableObjectConverter))]
         public Configuration Configuration
         {
             get;
@@ -142,7 +145,7 @@ namespace QifApi
         /// <param name="append">If set to <c>true</c> the import will append records rather than overwrite. Defaults to legacy behavior, which overwrites.</param>
         public void Import(string fileName, bool append = false)
         {
-            using (StreamReader reader = new StreamReader(fileName))
+            using (StreamReader reader = new StreamReader(File.OpenRead(fileName)))
             {
                 Import(reader, append);
             }
@@ -216,7 +219,7 @@ namespace QifApi
                 File.SetAttributes(fileName, FileAttributes.Normal);
             }
 
-            using (StreamWriter writer = new StreamWriter(fileName, false, encoding ?? Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(File.OpenWrite(fileName), encoding ?? Encoding.UTF8))
             {
                 writer.AutoFlush = true;
 
@@ -250,7 +253,7 @@ namespace QifApi
             }
 
             // Open the file
-            using (StreamReader sr = new StreamReader(fileName))
+            using (StreamReader sr = new StreamReader(File.OpenRead(fileName)))
             {
                 result = ImportFile(sr);
             }
@@ -264,7 +267,7 @@ namespace QifApi
         /// <param name="reader">The stream reader pointing to an underlying QIF file to import.</param>
         /// <param name="config">The configuration to use while importing raw data</param> 
         /// <returns>A QifDom object of transactions imported.</returns>
-        public static QifDom ImportFile(StreamReader reader, Configuration config = null)
+        public static QifDom ImportFile(TextReader reader, Configuration config = null)
         {
             QifDom result = new QifDom(config);
 
@@ -273,6 +276,9 @@ namespace QifApi
 
             // Split the file by header types
             string[] transactionTypes = Regex.Split(input, @"^(!.*)$", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace);
+
+            // Remember the last account name we saw so we can link its transactions to it.
+            string currentAccountName = string.Empty;
 
             // Loop through the transaction types
             for (int i = 0; i < transactionTypes.Length; i++)
@@ -294,7 +300,13 @@ namespace QifApi
                             string bankItems = transactionTypes[i];
 
                             // Import all transaction types
-                            result.BankTransactions.AddRange(BankLogic.Import(bankItems, result.Configuration));
+                            var transactions = BankLogic.Import(bankItems, result.Configuration);
+
+                            // Associate the transactions with last account we saw.
+                            foreach (var transaction in transactions)
+                                transaction.AccountName = currentAccountName;
+
+                            result.BankTransactions.AddRange(transactions);
 
                             // All done
                             break;
@@ -306,7 +318,12 @@ namespace QifApi
                             string accountListItems = transactionTypes[i];
 
                             // Import all transaction types
-                            result.AccountListTransactions.AddRange(AccountListLogic.Import(accountListItems, result.Configuration));
+                            var accounts = AccountListLogic.Import(accountListItems, result.Configuration);
+
+                            // Remember account so transaction following can be linked to it.
+                            currentAccountName = accounts.Last().Name;
+
+                            result.AccountListTransactions.AddRange(accounts);
 
                             // All done
                             break;
